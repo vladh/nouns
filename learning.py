@@ -1,7 +1,14 @@
+import time
+from collections import defaultdict
 import numpy as np
 from sklearn import tree
 from sklearn.model_selection import KFold
 import data
+
+
+GRAPHS_DIR = 'graphs/'
+FREQSET_MIN_MAGNITUDE = 1000
+FREQSET_MIN_PROPORTION = 0.7
 
 
 def get_syllable(nouninfo_item):
@@ -76,23 +83,23 @@ def run_test(train_features, train_labels, test_features, test_labels):
     stats = {
         'accuracy': np.sum(pred_comparison == True) / len(test_labels), # noqa
     }
-    return stats
+    return [stats, clf]
 
 
-def run_crossvalidation():
-    nouninfo = data.load_nouninfo()
-    genders_and_syllables = get_genders_and_last_syllables(nouninfo)
+def export_graph(clf, class_names):
+    with open(f'{GRAPHS_DIR}tree-{str(time.time())}.dot', 'w') as fp:
+        tree.export_graphviz(
+          clf, out_file=fp, class_names=class_names, filled=True, rounded=True,
+          special_characters=True, max_depth=10,
+        )
 
-    [gender_to_id, id_to_gender, unique_genders] = get_value_map(
-        [d[0] for d in genders_and_syllables]
-    )
-    [syllable_to_id, id_to_syllable, unique_syllables] = get_value_map(
-        [d[1] for d in genders_and_syllables]
-    )
 
-    [all_features, all_labels] = make_features_and_labels(
-        nouninfo, gender_to_id, syllable_to_id
-    )
+def run_crossvalidation(
+    genders_and_syllables,
+    gender_to_id, id_to_gender, unique_genders,
+    syllable_to_id, id_to_syllable, unique_syllables,
+    all_features, all_labels
+):
     print(f'>>> {len(all_features)} nouns (samples)')
     for gender in unique_genders:
         print(f'    {np.sum(all_labels == gender_to_id(gender))} {gender}')
@@ -108,12 +115,111 @@ def run_crossvalidation():
         test_features = all_features[test_index]
         train_labels = all_labels[train_index]
         test_labels = all_labels[test_index]
-        stats = run_test(
+        [stats, clf] = run_test(
             train_features, train_labels,
             test_features, test_labels,
         )
         print(f'Accuracy: {round(stats["accuracy"] * 100, 2)}%')
+        if idx == 0:
+            print('Exporting graph...')
+            export_graph(clf, unique_genders)
+
+
+def get_freqset_proportion(freqset):
+    freqset_values = list(freqset[1].values())
+    freqset_sum = np.sum(freqset_values)
+    freqset_max = np.max(freqset_values)
+    return freqset_max / freqset_sum
+
+
+def get_freqset_magnitude(freqset):
+    return np.sum(list(freqset[1].values()))
+
+
+def get_freqset_relevance(freqset):
+    freqset_proportion = get_freqset_proportion(freqset)
+    freqset_magnitude = get_freqset_magnitude(freqset)
+    if freqset_magnitude < FREQSET_MIN_MAGNITUDE:
+        return 0
+    if freqset_proportion < FREQSET_MIN_PROPORTION:
+        return 0
+    return (freqset_magnitude / 100000) * freqset_proportion
+
+
+def is_nice_freqset(freqset):
+    if len(freqset[0]) == 0:
+        return False
+    if get_freqset_relevance(freqset) == 0:
+        return False
+    return True
+
+
+def print_freqsets(freqsets):
+    print(
+        f'{len(freqsets)} syllables with ' +
+        f'(freq > {FREQSET_MIN_MAGNITUDE}), ' +
+        f'(proportion > {FREQSET_MIN_PROPORTION * 100}%)'
+    )
+    for freqset in freqsets:
+        [syllable, pairs] = freqset
+        proportion = get_freqset_proportion(freqset)
+        sorted_pairs = sorted(pairs.items(), key=lambda kv: kv[1], reverse=True)
+        pair_strings = [f'{k} = {str(v).ljust(5)}' for [k, v] in sorted_pairs]
+        print(
+            '{syllable: <16}{prop: <16}{pairs}'.format(
+                syllable=f'-{syllable}',
+                prop=f'{round(proportion * 100, 2)}% {sorted_pairs[0][0]}',
+                pairs=f'{" ".join(pair_strings)}'
+            )
+        )
+
+
+def run_analysis(
+    genders_and_syllables,
+):
+    freqsets = defaultdict(lambda: defaultdict(int))
+    for [gender, syllable] in genders_and_syllables:
+        freqsets[syllable][gender] += 1
+    freqsets_items = freqsets.items()
+    clean_freqsets = [
+        freqset for freqset in freqsets_items
+        if is_nice_freqset(freqset)
+    ]
+    sorted_clean_freqsets = sorted(
+        clean_freqsets,
+        key=get_freqset_relevance,
+        reverse=True
+    )
+    print_freqsets(sorted_clean_freqsets)
 
 
 if __name__ == '__main__':
-    run_crossvalidation()
+    nouninfo = [
+        d for d in data.load_nouninfo()
+        if get_gender(d) != 'pl'
+    ]
+    genders_and_syllables = get_genders_and_last_syllables(nouninfo)
+
+    [gender_to_id, id_to_gender, unique_genders] = get_value_map(
+        [d[0] for d in genders_and_syllables]
+    )
+    [syllable_to_id, id_to_syllable, unique_syllables] = get_value_map(
+        [d[1] for d in genders_and_syllables]
+    )
+
+    [all_features, all_labels] = make_features_and_labels(
+        nouninfo, gender_to_id, syllable_to_id
+    )
+
+    # print(f'=== Running cross-validation')
+    # run_crossvalidation(
+    #     genders_and_syllables,
+    #     gender_to_id, id_to_gender, unique_genders,
+    #     syllable_to_id, id_to_syllable, unique_syllables,
+    #     all_features, all_labels
+    # )
+
+    print(f'=== Running frequency analysis')
+    run_analysis(
+        genders_and_syllables,
+    )
