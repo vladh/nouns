@@ -10,8 +10,13 @@ CACHED_NOUNINFO_PATH = f'{CACHE_DIR}nouninfo.pkl'
 
 def parse_noun_line(line):
     """
-    Returns [word, gender] for a Leo dictionary noun entry line.
-    Format: (aktive) Langzeitverbindung {f}
+    For a Leo dictionary noun entry line:
+
+        (aktive) Langzeitverbindung {f}
+
+    returns a list of the form:
+
+        ['Langzeitverbindung', 'f']
     """
     gender_start = line.find('{') + 1
     gender_end = line.find('}')
@@ -27,14 +32,20 @@ def get_nouninfo():
     """
     Returns a list of the form:
 
-    [['Regel', 'f', 're-gel'], ...]
+        [['Regel', 'f', 're-gel'], ...]
+
+    For words with spaces in them, the syllable separation will only feature
+    the last actual word after splitting by spaces.
     """
     dic = pyphen.Pyphen(lang='de_DE')
     nouninfo = []
     with open(NOUNS_PATH, 'r') as lines:
         for line in lines:
             [word, gender] = parse_noun_line(line)
-            separation = dic.inserted(word)
+            if ' ' in word:
+                separation = dic.inserted(word.split(' ')[-1])
+            else:
+                separation = dic.inserted(word)
             nouninfo.append([word, gender, separation])
     return nouninfo
 
