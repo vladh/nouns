@@ -1,18 +1,21 @@
 import time
+import itertools
 from collections import defaultdict
 import numpy as np
 from sklearn import tree
 from sklearn.model_selection import KFold
-import pyphen
+# import pyphen
 import data
 
 
 GRAPHS_DIR = 'graphs/'
-FREQSET_MIN_MAGNITUDE = 500
-FREQSET_MIN_PROPORTION = 0.7
+ESTIMATED_RUNTIME_S = 3
+FREQSET_MIN_MAGNITUDE = 700
+FREQSET_MIN_PROPORTION = 0.1
+FREQSET_MAGNITUDE_FACTOR = 100000
 N_FREQSETS = 100
 N_FREQWORDS = False
-dic = pyphen.Pyphen(lang='de_DE')
+# dic = pyphen.Pyphen(lang='de_DE')
 
 
 def get_syllable(nouninfo_item):
@@ -147,7 +150,7 @@ def get_freqset_relevance(freqset):
         return 0
     if freqset_proportion < FREQSET_MIN_PROPORTION:
         return 0
-    return (freqset_magnitude / 100000) * freqset_proportion
+    return (freqset_magnitude / FREQSET_MAGNITUDE_FACTOR) * freqset_proportion
 
 
 def is_nice_freqset(freqset):
@@ -230,7 +233,7 @@ def match_freqwords(freqsets, freqwords, gendermap):
     matches = [
         match_freqword(freqword) for freqword in freqwords
     ]
-    accuracy = round(np.sum(np.array(matches) == True) / len(matches), 2)  # noqa
+    accuracy = round(np.sum(np.array(matches) == True) / len(matches), 4)  # noqa
     return [accuracy, matches]
 
 
@@ -283,9 +286,34 @@ def run():
     freqwords = data.get_freqwords(N_FREQWORDS)
     [accuracy, matches] = match_freqwords(freqsets, freqwords, gendermap)
     # print_freqwords_matches(freqwords_matches)
-    return [accuracy, matches]
+    return [accuracy, matches, freqsets]
 
 
 if __name__ == '__main__':
-    [accuracy, matches] = run()
-    print(f'{accuracy * 100}%')
+    # freqset_min_magnitudes = range(0, 2000 + 1, 100)
+    # freqset_min_proportions = [x / 10 for x in range(1, 10 + 1, 1)]
+    # paramsets = list(itertools.product(
+    #     freqset_min_magnitudes,
+    #     freqset_min_proportions,
+    # ))
+    paramsets = [[700, 0.1]]
+
+    print(f'===== Running for {len(paramsets)} paramsets.')
+    print(f'  Estimated runtime {ESTIMATED_RUNTIME_S * len(paramsets)} seconds.')
+
+    results = []
+    for paramset in paramsets:
+        [
+            freqset_min_magnitude,
+            freqset_min_proportion,
+        ] = paramset
+        # so sorry
+        FREQSET_MIN_MAGNITUDE = freqset_min_magnitude
+        FREQSET_MIN_PROPORTION = freqset_min_proportion
+        [accuracy, matches, freqsets] = run()
+        result = [paramset, accuracy]
+        results.append(result)
+        print(f'> Finished run: {paramset} {round(accuracy * 100, 2)}%')  # noqa
+        print_freqsets(freqsets)
+
+    print(results)
