@@ -260,19 +260,19 @@ def run():
     # 1. Cross-validation
     #
 
-    # print(f'=== Running cross-validation')
-    # run_crossvalidation(
-    #     genders_and_syllables,
-    #     gender_to_id, id_to_gender, unique_genders,
-    #     syllable_to_id, id_to_syllable, unique_syllables,
-    #     all_features, all_labels
-    # )
+    print(f'=== Running cross-validation')
+    run_crossvalidation(
+        genders_and_syllables,
+        gender_to_id, id_to_gender, unique_genders,
+        syllable_to_id, id_to_syllable, unique_syllables,
+        all_features, all_labels
+    )
 
     #
     # 2. Frequency analysis
     #
 
-    # print(f'=== Running frequency analysis')
+    print(f'=== Running frequency analysis')
     freqsets = run_analysis(
         genders_and_syllables,
     )
@@ -282,7 +282,7 @@ def run():
     # 3. Freqwords analysis
     #
 
-    # print(f'=== Running freqwords analysis')
+    print(f'=== Running freqwords analysis')
     freqwords = data.get_freqwords(N_FREQWORDS)
     [accuracy, matches] = match_freqwords(freqsets, freqwords, gendermap)
     # print_freqwords_matches(freqwords_matches)
@@ -292,11 +292,17 @@ def run():
 if __name__ == '__main__':
     # freqset_min_magnitudes = range(0, 2000 + 1, 100)
     # freqset_min_proportions = [x / 10 for x in range(1, 10 + 1, 1)]
-    # paramsets = list(itertools.product(
-    #     freqset_min_magnitudes,
-    #     freqset_min_proportions,
-    # ))
-    paramsets = [[700, 0.1]]
+    # n_freqsets = range(0, 120 + 1, 10)
+
+    freqset_min_magnitudes = [1400]
+    freqset_min_proportions = [0.7]
+    n_freqsets = [50]
+
+    paramsets = list(itertools.product(
+        freqset_min_magnitudes,
+        freqset_min_proportions,
+        n_freqsets,
+    ))
 
     print(f'===== Running for {len(paramsets)} paramsets.')
     print(f'  Estimated runtime {ESTIMATED_RUNTIME_S * len(paramsets)} seconds.')
@@ -306,14 +312,20 @@ if __name__ == '__main__':
         [
             freqset_min_magnitude,
             freqset_min_proportion,
+            n_freqsets,
         ] = paramset
+
         # so sorry
         FREQSET_MIN_MAGNITUDE = freqset_min_magnitude
         FREQSET_MIN_PROPORTION = freqset_min_proportion
+        N_FREQSETS = n_freqsets
+
         [accuracy, matches, freqsets] = run()
         result = [paramset, accuracy]
         results.append(result)
-        print(f'> Finished run: {paramset} {round(accuracy * 100, 2)}%')  # noqa
-        print_freqsets(freqsets)
+        print(f'>>>>> Finished run: {paramset} {round(accuracy * 100, 2)}%')  # noqa
+        # print_freqsets(freqsets)
 
+    print()
+    print('>>>>> Final results:')
     print(results)

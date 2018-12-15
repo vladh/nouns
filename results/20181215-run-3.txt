@@ -1,0 +1,57 @@
+===== Running for 1 paramsets.
+  Estimated runtime 3 seconds.
+> Finished run: (1400, 0.7, 50) 31.17%
+50 syllables with (freq > 1400), (proportion > 70.0%)
+-on             95.98% f        f = 10199 n = 335   m = 92   
+-te             96.39% f        f = 9920  m = 254   n = 118  
+-se             91.96% f        f = 8893  m = 441   n = 337  
+-rung           99.94% f        f = 8848  n = 4     m = 1    
+-le             95.08% f        f = 7570  n = 213   m = 179  
+-tung           99.92% f        f = 6347  m = 3     n = 2    
+-ge             85.4% f         f = 6345  m = 632   n = 453  
+-keit           99.92% f        f = 5206  n = 2     m = 2    
+-lung           99.94% f        f = 5082  m = 2     n = 1    
+-ne             96.93% f        f = 5021  m = 98    n = 61   
+-ler            99.54% m        m = 4323  n = 13    f = 7    
+-chen           91.5% n         n = 4315  m = 390   f = 11   
+-de             80.74% f        f = 4229  n = 601   m = 408  
+-be             86.62% f        f = 4019  n = 427   m = 194  
+-rin            96.04% f        f = 4002  n = 116   m = 49   
+-ger            91.96% m        m = 3603  n = 306   f = 9    
+-gung           99.92% f        f = 3530  m = 2     n = 1    
+-nung           99.9% f         f = 3129  m = 2     n = 1    
+-dung           99.71% f        f = 3091  m = 9    
+-re             94.24% f        f = 3026  n = 96    m = 89   
+-heit           99.83% f        f = 2912  n = 4     m = 1    
+-pe             98.11% f        f = 2797  m = 28    n = 26   
+-ner            98.8% m         m = 2718  n = 24    f = 9    
+-che            97.18% f        f = 2515  m = 41    n = 32   
+-tät            100.0% f        f = 2513 
+-cke            99.67% f        f = 2428  m = 6     n = 2    
+-mus            98.89% m        m = 2401  n = 24    f = 3    
+-gel            80.75% m        m = 2307  f = 401   n = 149  
+-ze             95.83% f        f = 2297  m = 78    n = 22   
+-fer            82.32% m        m = 2225  f = 349   n = 129  
+-schaft         97.38% f        f = 2193  m = 57    n = 2    
+-me             88.46% f        f = 2184  m = 267   n = 18   
+-tur            99.54% f        f = 2184  n = 7     m = 3    
+-ling           95.29% m        m = 1982  n = 85    f = 13   
+-tem            99.01% n        n = 1900  m = 12    f = 7    
+-der            79.22% m        m = 1879  f = 250   n = 242   sg. = 1    
+-ment           94.23% n        n = 1731  m = 104   f = 2    
+-tik            99.0% f         f = 1678  m = 13    n = 4    
+-um             99.58% n        n = 1642  f = 7    
+-sung           100.0% f        f = 1636 
+-rer            100.0% m        m = 1622 
+-ren            96.03% n        n = 1548  m = 60    f = 4    
+-zung           100.0% f        f = 1531 
+-nie            98.55% f        f = 1431  n = 18    m = 3    
+-stand          99.86% m        m = 1398  n = 2    
+-fe             84.95% f        f = 1383  m = 230   n = 15   
+-ber            83.49% m        m = 1335  n = 217   f = 47   
+-ke             83.12% f        f = 1280  m = 225   n = 35   
+-men            79.92% n        n = 1270  m = 318   f = 1    
+-nis            82.74% n        n = 1213  f = 216   m = 37   
+
+> Final results:
+[[(1400, 0.7, 50), 0.3117]]
