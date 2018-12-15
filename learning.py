@@ -190,12 +190,41 @@ def run_analysis(
         key=get_freqset_relevance,
         reverse=True
     )
-    print_freqsets(sorted_clean_freqsets)
+    freqsets_with_likeliest = [
+        [syllable, pairs, max(pairs, key=pairs.get)]
+        for [syllable, pairs] in sorted_clean_freqsets
+    ]
+    return freqsets_with_likeliest
+
+
+def find_freqset_for_word(freqsets, word):
+    match = next((
+        freqset for freqset in freqsets
+        if word.endswith(freqset[0])  # Hmm, should we split the word into syllables?
+    ), None)
+    return match
+
+
+def eval_freqwords(freqsets, freqwords, gendermap):
+    for [word, freq] in freqwords:
+        actual_gender = gendermap.get(word)
+        freqset = find_freqset_for_word(freqsets, word)
+        if freqset:
+            [syllable, pairs, likeliest_gender] = freqset
+            print(word)
+            print(actual_gender)
+            print(likeliest_gender)
+            print(freqset)
+        else:
+            print(word)
+            print(actual_gender)
+        print()
 
 
 if __name__ == '__main__':
+    [nouninfo, gendermap] = data.load_nouninfo()
     nouninfo = [
-        d for d in data.load_nouninfo()
+        d for d in nouninfo
         if get_gender(d) != 'pl'
     ]
     genders_and_syllables = get_genders_and_last_syllables(nouninfo)
@@ -211,6 +240,10 @@ if __name__ == '__main__':
         nouninfo, gender_to_id, syllable_to_id
     )
 
+    #
+    # 1. Cross-validation
+    #
+
     # print(f'=== Running cross-validation')
     # run_crossvalidation(
     #     genders_and_syllables,
@@ -219,7 +252,20 @@ if __name__ == '__main__':
     #     all_features, all_labels
     # )
 
+    #
+    # 2. Frequency analysis
+    #
+
     print(f'=== Running frequency analysis')
-    run_analysis(
+    freqsets = run_analysis(
         genders_and_syllables,
     )
+    # print_freqsets(freqsets)
+
+    #
+    # 3. Freqwords analysis
+    #
+
+    print(f'=== Running freqwords analysis')
+    freqwords = data.get_freqwords(10)
+    eval_freqwords(freqsets, freqwords, gendermap)

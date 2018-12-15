@@ -4,6 +4,7 @@ import config as config
 
 
 NOUNS_PATH = f'{config.DATA_DIR}leo/leo-nouns-uniq.txt'
+FREQWORDS_PATH = f'{config.DATA_DIR}drk/drk-stems-uniq.freq'
 CACHE_DIR = 'cache/'
 CACHED_NOUNINFO_PATH = f'{CACHE_DIR}nouninfo.pkl'
 
@@ -28,17 +29,31 @@ def parse_noun_line(line):
     return [word, gender]
 
 
+def get_freqwords(n=False):
+    with open(FREQWORDS_PATH, 'r') as lines:
+        freqwords = [line.strip().split('\t') for line in lines]
+    if n:
+        return freqwords[:n]
+    else:
+        return freqwords
+
+
 def get_nouninfo():
     """
-    Returns a list of the form:
+    Returns [nouninfo, gendermap], where nouninfo is a list of the form:
 
         [['Regel', 'f', 're-gel'], ...]
+
+    and gendermap is a dict of the form:
+
+        {'Regel': 'f', 'Auto': 'n', ...}
 
     For words with spaces in them, the syllable separation will only feature
     the last actual word after splitting by spaces.
     """
     dic = pyphen.Pyphen(lang='de_DE')
     nouninfo = []
+    gendermap = {}
     with open(NOUNS_PATH, 'r') as lines:
         for line in lines:
             [word, gender] = parse_noun_line(line)
@@ -47,7 +62,8 @@ def get_nouninfo():
             else:
                 separation = dic.inserted(word)
             nouninfo.append([word, gender, separation])
-    return nouninfo
+            gendermap[word] = gender
+    return [nouninfo, gendermap]
 
 
 def save_nouninfo():
@@ -63,6 +79,7 @@ def load_nouninfo():
 
 
 if __name__ == '__main__':
+    print(get_freqs())
     # save_nouninfo()
-    nouninfo = load_nouninfo()
-    print(nouninfo[5000])
+    # nouninfo = load_nouninfo()
+    # print(nouninfo[5000])
