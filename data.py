@@ -79,7 +79,7 @@ def load_nouninfo():
 
 
 if __name__ == '__main__':
-    print(get_freqs())
+    print(get_freqwords())
     # save_nouninfo()
     # nouninfo = load_nouninfo()
     # print(nouninfo[5000])

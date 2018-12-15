@@ -3,12 +3,16 @@ from collections import defaultdict
 import numpy as np
 from sklearn import tree
 from sklearn.model_selection import KFold
+import pyphen
 import data
 
 
 GRAPHS_DIR = 'graphs/'
-FREQSET_MIN_MAGNITUDE = 1000
+FREQSET_MIN_MAGNITUDE = 500
 FREQSET_MIN_PROPORTION = 0.7
+N_FREQSETS = 100
+N_FREQWORDS = False
+dic = pyphen.Pyphen(lang='de_DE')
 
 
 def get_syllable(nouninfo_item):
@@ -161,7 +165,7 @@ def print_freqsets(freqsets):
         f'(proportion > {FREQSET_MIN_PROPORTION * 100}%)'
     )
     for freqset in freqsets:
-        [syllable, pairs] = freqset
+        [syllable, pairs, _] = freqset
         proportion = get_freqset_proportion(freqset)
         sorted_pairs = sorted(pairs.items(), key=lambda kv: kv[1], reverse=True)
         pair_strings = [f'{k} = {str(v).ljust(5)}' for [k, v] in sorted_pairs]
@@ -185,6 +189,7 @@ def run_analysis(
         freqset for freqset in freqsets_items
         if is_nice_freqset(freqset)
     ]
+    clean_freqsets = clean_freqsets[:N_FREQSETS]
     sorted_clean_freqsets = sorted(
         clean_freqsets,
         key=get_freqset_relevance,
@@ -198,30 +203,38 @@ def run_analysis(
 
 
 def find_freqset_for_word(freqsets, word):
+    # NOTE: Actually comparing with the last syllable gives slightly worse
+    # results. This is OK, as people would most likely just check if the word
+    # ends with the suffix at any rate.
+    # last_syllable = dic.inserted(word).split('-')[-1]
     match = next((
         freqset for freqset in freqsets
-        if word.endswith(freqset[0])  # Hmm, should we split the word into syllables?
+        if word.endswith(freqset[0])
+        # if last_syllable == freqset[0]
     ), None)
     return match
 
 
-def eval_freqwords(freqsets, freqwords, gendermap):
-    for [word, freq] in freqwords:
+def match_freqwords(freqsets, freqwords, gendermap):
+    def match_freqword(freqword):
+        [word, freq] = freqword
         actual_gender = gendermap.get(word)
         freqset = find_freqset_for_word(freqsets, word)
-        if freqset:
-            [syllable, pairs, likeliest_gender] = freqset
-            print(word)
-            print(actual_gender)
-            print(likeliest_gender)
-            print(freqset)
-        else:
-            print(word)
-            print(actual_gender)
-        print()
+        if not freqset:
+            # print(word + ' ' + str(False))
+            return False
+        [syllable, pairs, likeliest_gender] = freqset
+        can_predict = (likeliest_gender == actual_gender)
+        # print(word + ' ' + str(can_predict))
+        return can_predict
+    matches = [
+        match_freqword(freqword) for freqword in freqwords
+    ]
+    accuracy = round(np.sum(np.array(matches) == True) / len(matches), 2)  # noqa
+    return [accuracy, matches]
 
 
-if __name__ == '__main__':
+def run():
     [nouninfo, gendermap] = data.load_nouninfo()
     nouninfo = [
         d for d in nouninfo
@@ -256,7 +269,7 @@ if __name__ == '__main__':
     # 2. Frequency analysis
     #
 
-    print(f'=== Running frequency analysis')
+    # print(f'=== Running frequency analysis')
     freqsets = run_analysis(
         genders_and_syllables,
     )
@@ -266,6 +279,13 @@ if __name__ == '__main__':
     # 3. Freqwords analysis
     #
 
-    print(f'=== Running freqwords analysis')
-    freqwords = data.get_freqwords(10)
-    eval_freqwords(freqsets, freqwords, gendermap)
+    # print(f'=== Running freqwords analysis')
+    freqwords = data.get_freqwords(N_FREQWORDS)
+    [accuracy, matches] = match_freqwords(freqsets, freqwords, gendermap)
+    # print_freqwords_matches(freqwords_matches)
+    return [accuracy, matches]
+
+
+if __name__ == '__main__':
+    [accuracy, matches] = run()
+    print(f'{accuracy * 100}%')
