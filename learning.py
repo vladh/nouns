@@ -15,6 +15,7 @@ FREQSET_MIN_PROPORTION = 0.1
 FREQSET_MAGNITUDE_FACTOR = 100000
 N_FREQSETS = 100
 N_FREQWORDS = False
+N_FOLDS = 20
 # dic = pyphen.Pyphen(lang='de_DE')
 
 
@@ -111,13 +112,12 @@ def run_crossvalidation(
     for gender in unique_genders:
         print(f'    {np.sum(all_labels == gender_to_id(gender))} {gender}')
 
-    n_splits = 5
-    print(f'>>> running {n_splits} splits')
-    kfold = KFold(n_splits=n_splits)
+    print(f'>>> Running {N_FOLDS} splits')
+    kfold = KFold(n_splits=N_FOLDS)
     kfold.get_n_splits(all_features)
 
+    accuracies = []
     for idx, [train_index, test_index] in enumerate(kfold.split(all_features)):
-        print(f'>> fold {idx}')
         train_features = all_features[train_index]
         test_features = all_features[test_index]
         train_labels = all_labels[train_index]
@@ -126,10 +126,17 @@ def run_crossvalidation(
             train_features, train_labels,
             test_features, test_labels,
         )
-        print(f'Accuracy: {round(stats["accuracy"] * 100, 2)}%')
-        if idx == 0:
-            print('Exporting graph...')
-            export_graph(clf, unique_genders)
+        accuracies.append(stats['accuracy'])
+        print(f'> Fold {idx}, accuracy = {round(stats["accuracy"] * 100, 2)}%')
+        # if idx == 0:
+        #     print('Exporting graph...')
+        #     export_graph(clf, unique_genders)
+        if idx > 20:
+            break
+    avg_accuracy = np.mean(accuracies)
+    print(f'> Average accuracy: {round(avg_accuracy * 100, 2)}%')
+    print()
+    return avg_accuracy
 
 
 def get_freqset_proportion(freqset):
@@ -261,7 +268,7 @@ def run():
     #
 
     print(f'=== Running cross-validation')
-    run_crossvalidation(
+    accuracy = run_crossvalidation(
         genders_and_syllables,
         gender_to_id, id_to_gender, unique_genders,
         syllable_to_id, id_to_syllable, unique_syllables,
@@ -272,20 +279,22 @@ def run():
     # 2. Frequency analysis
     #
 
-    print(f'=== Running frequency analysis')
-    freqsets = run_analysis(
-        genders_and_syllables,
-    )
+    # print(f'=== Running frequency analysis')
+    # freqsets = run_analysis(
+    #     genders_and_syllables,
+    # )
     # print_freqsets(freqsets)
 
     #
     # 3. Freqwords analysis
     #
 
-    print(f'=== Running freqwords analysis')
-    freqwords = data.get_freqwords(N_FREQWORDS)
-    [accuracy, matches] = match_freqwords(freqsets, freqwords, gendermap)
+    # print(f'=== Running freqwords analysis')
+    # freqwords = data.get_freqwords(N_FREQWORDS)
+    # [accuracy, matches] = match_freqwords(freqsets, freqwords, gendermap)
     # print_freqwords_matches(freqwords_matches)
+    matches = None
+    freqsets = None
     return [accuracy, matches, freqsets]
 
 
@@ -293,6 +302,7 @@ if __name__ == '__main__':
     # freqset_min_magnitudes = range(0, 2000 + 1, 100)
     # freqset_min_proportions = [x / 10 for x in range(1, 10 + 1, 1)]
     # n_freqsets = range(0, 120 + 1, 10)
+    n_folds = range(2000, 200000, 10000)
 
     freqset_min_magnitudes = [1400]
     freqset_min_proportions = [0.7]
@@ -302,10 +312,10 @@ if __name__ == '__main__':
         freqset_min_magnitudes,
         freqset_min_proportions,
         n_freqsets,
+        n_folds,
     ))
 
     print(f'===== Running for {len(paramsets)} paramsets.')
-    print(f'  Estimated runtime {ESTIMATED_RUNTIME_S * len(paramsets)} seconds.')
 
     results = []
     for paramset in paramsets:
@@ -313,18 +323,22 @@ if __name__ == '__main__':
             freqset_min_magnitude,
             freqset_min_proportion,
             n_freqsets,
+            n_folds,
         ] = paramset
 
         # so sorry
         FREQSET_MIN_MAGNITUDE = freqset_min_magnitude
         FREQSET_MIN_PROPORTION = freqset_min_proportion
         N_FREQSETS = n_freqsets
+        N_FOLDS = n_folds
 
         [accuracy, matches, freqsets] = run()
         result = [paramset, accuracy]
         results.append(result)
         print(f'>>>>> Finished run: {paramset} {round(accuracy * 100, 2)}%')  # noqa
-        # print_freqsets(freqsets)
+        # if freqsets:
+        #     print_freqsets(freqsets)
+        print()
 
     print()
     print('>>>>> Final results:')
